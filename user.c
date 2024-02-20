@@ -1,5 +1,6 @@
 #include "user.h"
 #include "common.h"
+#include "frame.h"
 
 #include <raymath.h>
 #include <tinyfiledialogs.h>
@@ -25,8 +26,12 @@ void hovering_update(User *user)
 					   patterns,
 					   "image files",
 					   0);
-    /* if (response) */
-    /*   tex = LoadTexture(response); */
+    if (response) {
+      Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), user->cam);
+      Texture tex = LoadTexture(response);
+      frame_h id = emerge_frame((Rectangle) {world_coords.x, world_coords.y, tex.width, tex.height},
+				(FrameAttr) {tex});
+    }
   }
 }
 
@@ -58,8 +63,8 @@ void selecting_update(User *user)
     user->state = HOVERING;
     user->hold_diff.x = 0;
     user->hold_diff.y = 0;
-    user->selection_rec.x = 0;
-    user->selection_rec.y = 0;
+    user->selection_rec.x = -10000;
+    user->selection_rec.y = -10000;
     user->selection_rec.width = 0;
     user->selection_rec.height = 0;
   }
