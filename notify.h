@@ -4,12 +4,14 @@
 #include <raylib.h>
 
 typedef struct NotifyArgs {
+  int state;
   Vector2 v2;
   Texture tex;
 } NotifyArgs;
 
 typedef enum NotifyMessage {
   TEXTURE_FRAME_CREATED = 1,
+  STATE_ENTERED,
 } NotifyMessage;
 
 typedef void (*NotifyCallback)(NotifyArgs args);

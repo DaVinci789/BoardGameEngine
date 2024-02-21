@@ -13,7 +13,6 @@ User user_init()
   user.cam.zoom = 1;
   user.selection_rec.x = -10000;
   user.selection_rec.y = -10000;
-  register_listener(FRAME_SELECTED, &on_frame_selected);
   return user;
 }
 void hovering_update(User *user)
@@ -26,6 +25,8 @@ void hovering_update(User *user)
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     user->just_switched_state = 1;
     user->state = SELECTING;
+    notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
+    return;
   }
 
   if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
@@ -40,6 +41,7 @@ void hovering_update(User *user)
       Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), user->cam);
       Texture tex = LoadTexture(response);
       notify(TEXTURE_FRAME_CREATED, (NotifyArgs) {.v2 = world_coords, .tex = tex});
+      return;
     }
   }
 }
@@ -76,5 +78,6 @@ void selecting_update(User *user)
     user->selection_rec.y = -10000;
     user->selection_rec.width = 0;
     user->selection_rec.height = 0;
+    notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
   }
 }
