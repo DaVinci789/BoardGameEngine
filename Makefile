@@ -3,6 +3,11 @@ LIBS = -lraylib
 CC = gcc
 CFLAGS = -Iinclude -Llib -g -Wl,-rpath=lib
 
+ifneq ($(OS), Windows_NT)
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S), Darwin)
+		CFLAGS = -Wall -Iinclude -Llib -g -L`pwd`/lib -Xlinker -rpath -Xlinker `pwd`/lib
+
 .PHONY = default all clean
 
 default: $(TARGET)
