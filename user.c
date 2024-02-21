@@ -1,6 +1,7 @@
 #include "user.h"
 #include "common.h"
 #include "frame.h"
+#include "notify.h"
 
 #include <raymath.h>
 #include <tinyfiledialogs.h>
@@ -29,8 +30,7 @@ void hovering_update(User *user)
     if (response) {
       Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), user->cam);
       Texture tex = LoadTexture(response);
-      frame_h id = emerge_frame((Rectangle) {world_coords.x, world_coords.y, tex.width, tex.height},
-				(FrameAttr) {tex});
+      notify(TEXTURE_FRAME_CREATED, (NotifyArgs) {.v2 = world_coords, .tex = tex});
     }
   }
 }
@@ -68,5 +68,4 @@ void selecting_update(User *user)
     user->selection_rec.width = 0;
     user->selection_rec.height = 0;
   }
-
 }

@@ -6,6 +6,7 @@
 
 #include "user.h"
 #include "frame.h"
+#include "notify.h"
 
 #define GRIDSIZE 16
 
@@ -47,6 +48,7 @@ int main(void)
   user.selection_rec.x = -10000;
   user.selection_rec.y = -10000;
 
+  init_notification_system();
   init_frame_system();
   while (!WindowShouldClose())
     {
@@ -65,15 +67,6 @@ int main(void)
 	break;
       }
       previous_mouse_position = GetMousePosition();
-
-      /* if (IsKeyPressed(KEY_N)) { */
-      /* 	frame_h the_frame = emerge_frame((Rectangle){ */
-      /* 	    .x = GetMouseX(), */
-      /* 	    .y = GetMouseY(), */
-      /* 	    .width = 30, */
-      /* 	    .height = 30, */
-      /* 	}); */
-      /* } */
 
       BeginDrawing();
       ClearBackground(RAYWHITE);
