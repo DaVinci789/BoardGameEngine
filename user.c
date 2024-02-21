@@ -7,6 +7,15 @@
 #include <tinyfiledialogs.h>
 #include <stddef.h>
 
+User user_init()
+{
+  User user = {0};
+  user.cam.zoom = 1;
+  user.selection_rec.x = -10000;
+  user.selection_rec.y = -10000;
+  register_listener(FRAME_SELECTED, &on_frame_selected);
+  return user;
+}
 void hovering_update(User *user)
 {
   if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {

@@ -43,13 +43,12 @@ int main(void)
   InitWindow(800, 600, "Board Games");
 
   Texture grid_texture = generate_grid();
-  User user = {0};
-  user.cam.zoom = 1;
-  user.selection_rec.x = -10000;
-  user.selection_rec.y = -10000;
 
   init_notification_system();
   init_frame_system();
+
+  User user = user_init();
+
   while (!WindowShouldClose())
     {
       switch (user.state) {

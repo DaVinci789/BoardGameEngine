@@ -20,6 +20,7 @@ typedef struct User {
   Rectangle selection_rec;
 } User;
 
+User user_init();
 void hovering_update(User *user);
 void selecting_update(User *user);
 
