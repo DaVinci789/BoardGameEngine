@@ -15,9 +15,10 @@ static void on_user_frame_created(NotifyArgs args);
 void init_frame_system()
 {
   rects = calloc(MAX_FRAMES, sizeof(*rects));
-  counters = calloc(MAX_FRAMES, sizeof(*rects));
-  attrs = calloc(MAX_FRAMES, sizeof(*rects));
+  counters = calloc(MAX_FRAMES, sizeof(*counters));
+  attrs = calloc(MAX_FRAMES, sizeof(*attrs));
   register_listener(TEXTURE_FRAME_CREATED, &on_user_frame_created);
+  register_listener(STATE_ENTERED, &on_user_state_enter);
 }
 
 frame_h emerge_frame(Rectangle rect, FrameAttr attributes)
