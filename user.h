@@ -23,5 +23,6 @@ typedef struct User {
 User user_init();
 void hovering_update(User *user);
 void selecting_update(User *user);
+void grabbing_update(User *user);
 
 #endif

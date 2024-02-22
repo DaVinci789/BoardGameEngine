@@ -12,6 +12,7 @@ static int user_hover = 0;
 
 static void on_user_frame_created(NotifyArgs args);
 static void on_user_state_enter(NotifyArgs args);
+static void on_user_query_card(NotifyArgs args);
 
 void init_frame_system()
 {
@@ -20,6 +21,7 @@ void init_frame_system()
   attrs = calloc(MAX_FRAMES, sizeof(*attrs));
   register_listener(TEXTURE_FRAME_CREATED, &on_user_frame_created);
   register_listener(STATE_ENTERED, &on_user_state_enter);
+  register_listener(QUERY_CARD, &on_user_query_card);
 }
 
 frame_h emerge_frame(Rectangle rect, FrameAttr attributes)
@@ -81,4 +83,20 @@ static void on_user_frame_created(NotifyArgs args)
 static void on_user_state_enter(NotifyArgs args)
 {
   user_hover = args.state == SELECTING;
+}
+
+static void on_user_query_card(NotifyArgs args)
+{
+  for (int i = 0; i < MAX_FRAMES; i++) {
+    if (CheckCollisionRecs(rects[i],
+			  (Rectangle) {
+			    .x = args.v2.x,
+			    .y = args.v2.y,
+			    .width = 1,
+			    .height = 1,
+			  })) {
+      notify(QUERY_CARD_FINISHED, (NotifyArgs) {.b = 1});
+      return;
+    }
+  }
 }
