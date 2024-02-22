@@ -108,6 +108,8 @@ int main(void)
       }
 
       EndDrawing();
+
+      reset_frame_arena();
     }
   CloseWindow();
 }
