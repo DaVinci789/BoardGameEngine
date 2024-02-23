@@ -3,10 +3,12 @@ LIBS = -lraylib
 CC = gcc
 CFLAGS = -Iinclude -Llib -g -Wl,-rpath=lib
 
-ifneq ($(OS), Windows_NT)
+ifeq ($(OS), Windows_NT)
+	CFLAGS = -msse2 -Iinclude -Llib/windows -lole32 -lcomctl32 -lcomdlg32 -loleaut32 -luuid -lpthread -lopengl32 -lgdi32 -lwinmm -lm
+else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S), Darwin)
-		CFLAGS = -Wall -Iinclude -Llib -g -L`pwd`/lib -Xlinker -rpath -Xlinker `pwd`/lib
+		CFLAGS = -Iinclude -Llib -g -L`pwd`/lib -Xlinker -rpath -Xlinker `pwd`/lib
 	endif
 endif
 
@@ -24,7 +26,7 @@ HEADERS = $(wildcard *.hpp)
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(CFLAGS) $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall $(LIBS) $(CFLAGS) -o $@
 
 clean:
 	-rm -f *.o
