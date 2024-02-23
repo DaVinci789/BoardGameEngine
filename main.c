@@ -121,8 +121,6 @@ int main(void)
 	break;
       }
       EndDrawing();
-
-      //reset_frame_arena();
     }
   CloseWindow();
 }

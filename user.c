@@ -83,7 +83,7 @@ void selecting_update(User *user)
       user->selection_rec.y = user->hold_origin.y + user->hold_diff.y;
       user->selection_rec.height *= -1;
     }
-  }
+  } // selection_rec used in frame_update(Rect);
 
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
     user->just_switched_state = 1;

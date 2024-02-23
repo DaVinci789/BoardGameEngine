@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
 
 static Rectangle *rects;
 static uint16_t *counters;
@@ -118,6 +119,21 @@ void reset_frame_arena()
   arena_used = 0;
 }
 
+static int query_frames(frame_h **frames, int (*selector)(Rectangle rect, FrameAttr attr, void *context), void *context)
+{
+  int start = arena_used;
+  int len = 0;
+  for (int i = 0; i < MAX_FRAMES; i++) {
+    if (selector(rects[i], attrs[i], context)) {
+      frame_arena[arena_used] = attrs[i].id;
+      arena_used += 1;
+      len += 1;
+      *frames = &frame_arena[start];
+    }
+  }
+  return len;
+}
+
 static void on_user_frame_created(NotifyArgs args)
 {
   Vector2 world_coords = args.v2;
@@ -131,16 +147,45 @@ static void on_user_state_enter(NotifyArgs args)
   user_hover = args.state == SELECTING;
 }
 
+static int frame_is_selected(Rectangle r, FrameAttr a, void *context)
+{
+  return a.selected;
+}
+
 static void on_user_query_card(NotifyArgs args)
 {
-  for (int i = 0; i < MAX_FRAMES; i++) {
+  frame_h *frames = NULL;
+  int frames_len = get_frames_colliding_world_rect((Rectangle) {
+      .x = args.v2.x,
+      .y = args.v2.y,
+      .width = 1,
+      .height = 1,
+    }, &frames);
+
+  if (frames_len == 0) return;
+
+  frames = NULL;
+  frames_len = query_frames(&frames, &frame_is_selected, NULL);
+
+  if (frames_len == 0) return;
+  printf("ashd\n");
+
+  NotifyArgs args_send = {
+    .b = 1,
+    .frame_pointer = frames,
+    .frame_array_len = frames_len,
+  };
+
+  notify(QUERY_CARD_FINISHED, args_send);
+
+  /*for (int i = 0; i < MAX_FRAMES; i++) {
     if (CheckCollisionRecs(rects[i],
 			  (Rectangle) {
 			    .x = args.v2.x,
 			    .y = args.v2.y,
 			    .width = 1,
 			    .height = 1,
-			  })) {
+			  })) { // colliding with... any one
 
       frame_h *start = &frame_arena[arena_used];
       int frame_arr_len = 0;
@@ -159,5 +204,5 @@ static void on_user_query_card(NotifyArgs args)
       notify(QUERY_CARD_FINISHED, args);
       return;
     }
-  }
+    }*/
 }
