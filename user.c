@@ -6,6 +6,10 @@
 #include <raymath.h>
 #include <tinyfiledialogs.h>
 #include <stddef.h>
+#include <stdio.h>
+
+static int over_card = 0;
+static void on_query_cards_finished(NotifyArgs args);
 
 User user_init()
 {
@@ -13,8 +17,10 @@ User user_init()
   user.cam.zoom = 1;
   user.selection_rec.x = -10000;
   user.selection_rec.y = -10000;
+  register_listener(QUERY_CARD_FINISHED, &on_query_cards_finished);
   return user;
 }
+
 void hovering_update(User *user)
 {
   if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
@@ -24,7 +30,14 @@ void hovering_update(User *user)
 
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     user->just_switched_state = 1;
-    user->state = SELECTING;
+    Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), user->cam);
+    notify(QUERY_CARD, (NotifyArgs) {.state = user->state,
+				      .v2 = world_coords});
+    if (over_card)
+      user->state = GRABBING;
+    else 
+      user->state = SELECTING;
+
     notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
     return;
   }
@@ -80,4 +93,14 @@ void selecting_update(User *user)
     user->selection_rec.height = 0;
     notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
   }
+}
+
+void grabbing_update(User *user)
+{
+  printf("HKajsdasd\n");
+}
+
+static void on_query_cards_finished(NotifyArgs args)
+{
+  over_card = args.b;
 }

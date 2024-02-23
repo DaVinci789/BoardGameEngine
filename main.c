@@ -58,6 +58,7 @@ int main(void)
 	selecting_update(&user);
 	break;
       case GRABBING:
+	grabbing_update(&user);
 	break;
       case MENU:
 	break;
@@ -107,6 +108,8 @@ int main(void)
       }
 
       EndDrawing();
+
+      reset_frame_arena();
     }
   CloseWindow();
 }
