@@ -9,6 +9,9 @@
 #include <stdio.h>
 
 static int over_card = 0;
+static Vector2 selection_offset = {0};
+static frame_h *selected_frames;
+static int selected_frames_len = 0;
 static void on_query_cards_finished(NotifyArgs args);
 
 User user_init()
@@ -63,7 +66,7 @@ void selecting_update(User *user)
 {
   if (user->just_switched_state) {
     user->hold_origin = GetMousePosition();
-    user->just_switched_state = 0;
+    user->just_switched_state = 0; // @FIXME: Ideally... the calling function wouldn't be responsible for switching back the state... it would be somewhere in main...
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -97,10 +100,32 @@ void selecting_update(User *user)
 
 void grabbing_update(User *user)
 {
-  printf("HKajsdasd\n");
+  if (user->just_switched_state) {
+    over_card = 0;
+    selection_offset = GetMousePosition();
+    user->just_switched_state = 0;
+  }
+
+  if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    user->just_switched_state = 1;
+    user->state = HOVERING;
+    notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
+  }
+
+  Vector2 position = GetMousePosition();
+  for (int i = 0; i < selected_frames_len; i++) {
+    Rectangle *r = get_rect(selected_frames[i]);
+    r->x += position.x - selection_offset.x;
+    r->y += position.y - selection_offset.y;
+  }
+  selection_offset = position;
 }
 
 static void on_query_cards_finished(NotifyArgs args)
 {
   over_card = args.b;
+  if (over_card) {
+    selected_frames = args.frame_pointer;
+    selected_frames_len = args.frame_array_len;
+  }
 }

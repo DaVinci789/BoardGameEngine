@@ -2,12 +2,15 @@
 #define NOTIFY_H
 
 #include <raylib.h>
+#include "frame.h"
 
 typedef struct NotifyArgs {
   int state;
   bool b;
   Vector2 v2;
   Texture tex;
+  frame_h *frame_pointer;
+  int frame_array_len;
 } NotifyArgs;
 
 typedef enum NotifyMessage {

@@ -141,7 +141,22 @@ static void on_user_query_card(NotifyArgs args)
 			    .width = 1,
 			    .height = 1,
 			  })) {
-      notify(QUERY_CARD_FINISHED, (NotifyArgs) {.b = 1});
+
+      frame_h *start = &frame_arena[arena_used];
+      int frame_arr_len = 0;
+      for (int i = 0; i < MAX_FRAMES; i++) {
+	if (attrs[i].selected) {
+	  frame_arena[arena_used] = attrs[i].id;
+	  arena_used += 1;
+	  frame_arr_len += 1;
+	}
+      }
+      NotifyArgs args = {
+	.b = 1,
+	.frame_pointer = start,
+	.frame_array_len = frame_arr_len,
+      };
+      notify(QUERY_CARD_FINISHED, args);
       return;
     }
   }

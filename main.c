@@ -107,9 +107,22 @@ int main(void)
 	  }, (Color) {0, 0, 255, 127});
       }
 
+      switch (user.state) {
+      case HOVERING:
+	DrawText("HOVERING", 0, 0, 12, BLACK);
+	break;
+      case GRABBING:
+	DrawText("GRABBING", 0, 0, 12, BLACK);
+	break;
+      case SELECTING:
+	DrawText("SELECTING", 0, 0, 12, BLACK);
+	break;
+      default:
+	break;
+      }
       EndDrawing();
 
-      reset_frame_arena();
+      //reset_frame_arena();
     }
   CloseWindow();
 }
