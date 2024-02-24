@@ -168,7 +168,6 @@ static void on_user_query_card(NotifyArgs args)
   frames_len = query_frames(&frames, &frame_is_selected, NULL);
 
   if (frames_len == 0) return;
-  printf("ashd\n");
 
   NotifyArgs args_send = {
     .b = 1,
@@ -177,32 +176,4 @@ static void on_user_query_card(NotifyArgs args)
   };
 
   notify(QUERY_CARD_FINISHED, args_send);
-
-  /*for (int i = 0; i < MAX_FRAMES; i++) {
-    if (CheckCollisionRecs(rects[i],
-			  (Rectangle) {
-			    .x = args.v2.x,
-			    .y = args.v2.y,
-			    .width = 1,
-			    .height = 1,
-			  })) { // colliding with... any one
-
-      frame_h *start = &frame_arena[arena_used];
-      int frame_arr_len = 0;
-      for (int i = 0; i < MAX_FRAMES; i++) {
-	if (attrs[i].selected) {
-	  frame_arena[arena_used] = attrs[i].id;
-	  arena_used += 1;
-	  frame_arr_len += 1;
-	}
-      }
-      NotifyArgs args = {
-	.b = 1,
-	.frame_pointer = start,
-	.frame_array_len = frame_arr_len,
-      };
-      notify(QUERY_CARD_FINISHED, args);
-      return;
-    }
-    }*/
 }

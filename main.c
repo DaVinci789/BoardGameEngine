@@ -7,6 +7,7 @@
 #include "user.h"
 #include "frame.h"
 #include "notify.h"
+#include "bucket.h"
 
 #define GRIDSIZE 16
 
@@ -45,11 +46,14 @@ int main(void)
 
   init_notification_system();
   init_frame_system();
+  init_buckets();
 
   User user = user_init();
+  user_register_buckets(&user);
 
   while (!WindowShouldClose())
     {
+      update_buckets();
       switch (user.state) {
       case HOVERING:
 	hovering_update(&user);
@@ -121,6 +125,7 @@ int main(void)
 	break;
       }
       EndDrawing();
+      reset_buckets();
     }
   CloseWindow();
 }

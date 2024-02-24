@@ -21,6 +21,7 @@ typedef struct User {
 } User;
 
 User user_init();
+void user_register_buckets(User *user);
 void hovering_update(User *user);
 void selecting_update(User *user);
 void grabbing_update(User *user);
