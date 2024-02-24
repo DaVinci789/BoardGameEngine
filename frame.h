@@ -18,7 +18,7 @@ typedef struct FrameAttr {
 void init_frame_system();
 frame_h emerge_frame(Rectangle rect, FrameAttr attrs);
 void submerge_frame(frame_h frame_handler);
-void frame_update(Rectangle rect);
+void draw_frames();
 Rectangle *rectangle_list();
 FrameAttr *attr_list();
 Rectangle *get_rect(frame_h h);

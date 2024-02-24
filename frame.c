@@ -13,11 +13,8 @@ static FrameAttr *attrs;
 static frame_h *frame_arena;
 static int arena_used;
 static int next_frame = 0;
-static int user_hover = 0;
 
 static void on_user_frame_created(NotifyArgs args);
-static void on_user_state_enter(NotifyArgs args);
-static void on_user_query_card(NotifyArgs args);
 
 void init_frame_system()
 {
@@ -26,8 +23,6 @@ void init_frame_system()
   attrs = calloc(MAX_FRAMES, sizeof(*attrs));
   frame_arena = calloc(MAX_FRAMES, sizeof(*frame_arena));
   register_listener(TEXTURE_FRAME_CREATED, &on_user_frame_created);
-  register_listener(STATE_ENTERED, &on_user_state_enter);
-  register_listener(QUERY_CARD, &on_user_query_card);
 }
 
 frame_h emerge_frame(Rectangle rect, FrameAttr attributes)
@@ -70,23 +65,6 @@ FrameAttr *get_attr(frame_h h)
   return &attrs[get_lsb(h.id)];
 }
 
-void frame_update(Rectangle world_select)
-{
-  if (user_hover) {
-    frame_h *frames = NULL;
-    int frames_len = get_frames_colliding_world_rect(world_select, &frames);
-
-    for (int i = 0; i < MAX_FRAMES; i++) {
-      attrs[i].selected = 0;
-    }
-
-    for (int i = 0; i < frames_len; i++) {
-      Rectangle r = *get_rect(frames[i]);
-      get_attr(frames[i])->selected = CheckCollisionRecs(world_select, r);
-    }
-  }
-}
-
 Rectangle *rectangle_list()
 {
   return rects;
@@ -119,21 +97,6 @@ void reset_frame_arena()
   arena_used = 0;
 }
 
-static int query_frames(frame_h **frames, int (*selector)(Rectangle rect, FrameAttr attr, void *context), void *context)
-{
-  int start = arena_used;
-  int len = 0;
-  for (int i = 0; i < MAX_FRAMES; i++) {
-    if (selector(rects[i], attrs[i], context)) {
-      frame_arena[arena_used] = attrs[i].id;
-      arena_used += 1;
-      len += 1;
-      *frames = &frame_arena[start];
-    }
-  }
-  return len;
-}
-
 static void on_user_frame_created(NotifyArgs args)
 {
   Vector2 world_coords = args.v2;
@@ -142,38 +105,14 @@ static void on_user_frame_created(NotifyArgs args)
 			    (FrameAttr) {.tex = tex, .c = WHITE});
 }
 
-static void on_user_state_enter(NotifyArgs args)
+void draw_frames()
 {
-  user_hover = args.state == SELECTING;
-}
-
-static int frame_is_selected(Rectangle r, FrameAttr a, void *context)
-{
-  return a.selected;
-}
-
-static void on_user_query_card(NotifyArgs args)
-{
-  frame_h *frames = NULL;
-  int frames_len = get_frames_colliding_world_rect((Rectangle) {
-      .x = args.v2.x,
-      .y = args.v2.y,
-      .width = 1,
-      .height = 1,
-    }, &frames);
-
-  if (frames_len == 0) return;
-
-  frames = NULL;
-  frames_len = query_frames(&frames, &frame_is_selected, NULL);
-
-  if (frames_len == 0) return;
-
-  NotifyArgs args_send = {
-    .b = 1,
-    .frame_pointer = frames,
-    .frame_array_len = frames_len,
-  };
-
-  notify(QUERY_CARD_FINISHED, args_send);
+  for (int i = 0; i < MAX_FRAMES; i++) {
+    Rectangle rec = rects[i];
+    Rectangle rec2 = rects[i];
+    FrameAttr attr = attr_list()[i];
+    rec.x = 0;
+    rec.y = 0;
+    DrawTextureRec(attr.tex, rec, (Vector2){rec2.x, rec2.y}, attr.selected ? BLACK : WHITE);
+  }
 }

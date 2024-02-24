@@ -69,11 +69,6 @@ int main(void)
       default:
 	break;
       }
-      Vector2 world_coords = GetScreenToWorld2D((Vector2) {user.selection_rec.x, user.selection_rec.y}, user.cam);
-      Vector2 world_size = Vector2Multiply((Vector2) {user.selection_rec.width, user.selection_rec.height},
-					   (Vector2) {(1.0/user.cam.zoom), (1.0/user.cam.zoom)});
-      Rectangle selected_world_rect = {world_coords.x, world_coords.y, world_size.x, world_size.y};
-      frame_update(selected_world_rect);
       previous_mouse_position = GetMousePosition();
 
       BeginDrawing();
@@ -85,14 +80,7 @@ int main(void)
       Rectangle dest = src;
       DrawTexturePro(grid_texture, src, dest, (Vector2){0}, 0, WHITE);
 
-      for (int i = 0; i < MAX_FRAMES; i++) {
-	Rectangle rec = rectangle_list()[i];
-	Rectangle rec2 = rectangle_list()[i];
-	FrameAttr attr = attr_list()[i];
-	rec.x = 0;
-	rec.y = 0;
-	DrawTextureRec(attr.tex, rec, (Vector2) {rec2.x, rec2.y}, attr.selected ? BLACK : WHITE);
-      }
+      draw_frames();
 
       EndMode2D();
 

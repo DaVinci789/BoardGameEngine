@@ -16,8 +16,6 @@ typedef struct NotifyArgs {
 typedef enum NotifyMessage {
   TEXTURE_FRAME_CREATED = 1,
   STATE_ENTERED,
-  QUERY_CARD,
-  QUERY_CARD_FINISHED,
 } NotifyMessage;
 
 typedef void (*NotifyCallback)(NotifyArgs args);

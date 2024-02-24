@@ -9,10 +9,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#define get_ith_attr_in_bucket(i, bucket) get_attr(get_bucket(*bucket)[i])
+
 static Vector2 selection_offset = {0};
 static int selected_frames_len = 0;
 
-static int get_hovered_cards(Rectangle r, FrameAttr a, void *context);
+static int get_selection_rec_frames(Rectangle r, FrameAttr a, void *context);
 static int get_selected_cards(Rectangle r, FrameAttr a, void *context);
 static int get_over_card(Rectangle r, FrameAttr a, void *context);
 
@@ -31,7 +33,7 @@ User user_init()
 
 void user_register_buckets(User *user)
 {
-  hovered_cards = register_bucket(&get_hovered_cards, user);
+  hovered_cards = register_bucket(&get_selection_rec_frames, user);
   selected_cards = register_bucket(&get_selected_cards, NULL);
   over_card = register_bucket(&get_over_card, NULL);
 }
@@ -47,10 +49,17 @@ void hovering_update(User *user)
     user->just_switched_state = 1;
     Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), user->cam);
 
-    if (over_card->len > 0)
+    if (over_card->len > 0) {
+      for (int i = 0; i < over_card->len; i++) {
+        get_ith_attr_in_bucket(i, over_card)->selected = 1;
+      }
       user->state = GRABBING;
-    else 
+    } else  {
+      for (int i = 0; i < selected_cards->len; i++) {
+        get_ith_attr_in_bucket(i, selected_cards)->selected = 0;
+      }
       user->state = SELECTING;
+    }
 
     notify(STATE_ENTERED, (NotifyArgs) {.state = user->state});
     return;
@@ -94,6 +103,10 @@ void selecting_update(User *user)
       user->selection_rec.y = user->hold_origin.y + user->hold_diff.y;
       user->selection_rec.height *= -1;
     }
+
+    for (int i = 0; i < hovered_cards->len; i++) {
+      get_attr(get_bucket(*hovered_cards)[i])->selected = 1;
+    }
   } // selection_rec used in frame_update(Rect);
 
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -127,7 +140,6 @@ void grabbing_update(User *user)
   for (int i = 0; i < selected_cards->len; i++) {
     Rectangle *r = get_rect(start[i]);
     FrameAttr *a = get_attr(start[i]);
-    printf("id: %d\n", a->id);
     r->x += position.x - selection_offset.x;
     r->y += position.y - selection_offset.y;
   }
@@ -144,7 +156,7 @@ static int get_over_card(Rectangle r, FrameAttr a, void *context)
   });
 }
 
-static int get_hovered_cards(Rectangle r, FrameAttr a, void *context)
+static int get_selection_rec_frames(Rectangle r, FrameAttr a, void *context)
 {
   User *user = (User *) context;
   return CheckCollisionRecs(r, user->selection_rec);
