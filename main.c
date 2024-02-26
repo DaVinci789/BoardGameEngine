@@ -1,17 +1,26 @@
 #include <raylib.h>
 #include <raymath.h>
+#include <tinyfiledialogs.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
-
-#include "user.h"
-#include "frame.h"
-#include "notify.h"
-#include "bucket.h"
+#include <string.h>
 
 #define GRIDSIZE 16
+#define MAX_FRAMES 1 << 16
 
 Vector2 previous_mouse_position = {0};
+
+typedef struct Frame {
+  Rectangle rec;
+  Texture tex;
+  int hot;
+  int active;
+  int selected;
+} Frame;
+
+Frame *frames = NULL;
+int used_frames = 0;
 
 Texture
 generate_grid()
@@ -39,81 +48,166 @@ generate_grid()
 
 int main(void)
 {
+  frames = calloc(MAX_FRAMES, sizeof(Frame));
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-  InitWindow(800, 600, "Board Games");
-
+  InitWindow(800, 600, "Board Games 2");
   Texture grid_texture = generate_grid();
+  Vector2 hold_origin = {0};
+  Vector2 hold_diff = {0};
+  Vector2 selection_offset = {0};
+  Rectangle selection_rec = {0};
+  Camera2D cam = {0};
 
-  init_notification_system();
-  init_frame_system();
-  init_buckets();
+  Frame *over_card = NULL;
+  Frame **selection_rec_cards = calloc(MAX_FRAMES, sizeof(Frame*));
+  int selection_rec_cards_len = 0;
+  Frame **selected_cards = calloc(MAX_FRAMES, sizeof(Frame*));
+  int selected_cards_len = 0;
+  Frame **unselected_cards = calloc(MAX_FRAMES, sizeof(Frame*));
+  int unselected_cards_len = 0;
 
-  User user = user_init();
-  user_register_buckets(&user);
+  cam.zoom = 1;
+  while (!WindowShouldClose()) {
 
-  while (!WindowShouldClose())
-    {
-      update_buckets();
-      switch (user.state) {
-      case HOVERING:
-	hovering_update(&user);
-	break;
-      case SELECTING:
-	selecting_update(&user);
-	break;
-      case GRABBING:
-	grabbing_update(&user);
-	break;
-      case MENU:
-	break;
-      default:
-	break;
-      }
-      previous_mouse_position = GetMousePosition();
-
-      BeginDrawing();
-      ClearBackground(RAYWHITE);
-
-      BeginMode2D(user.cam);
-
-      Rectangle src = (Rectangle){-100000, -100000, 200000, 200000};
-      Rectangle dest = src;
-      DrawTexturePro(grid_texture, src, dest, (Vector2){0}, 0, WHITE);
-
-      draw_frames();
-
-      EndMode2D();
-
-      if (user.state == SELECTING) {
-	DrawRectangleLinesEx((Rectangle){
-	    user.selection_rec.x,
-	    user.selection_rec.y,
-	    user.selection_rec.width,
-	    user.selection_rec.height
-	  }, 1.0, BLUE);
-	DrawRectangleRec((Rectangle){
-	    user.selection_rec.x,
-	    user.selection_rec.y,
-	    user.selection_rec.width,
-	    user.selection_rec.height
-	  }, (Color) {0, 0, 255, 127});
-      }
-
-      switch (user.state) {
-      case HOVERING:
-	DrawText("HOVERING", 0, 0, 12, BLACK);
-	break;
-      case GRABBING:
-	DrawText("GRABBING", 0, 0, 12, BLACK);
-	break;
-      case SELECTING:
-	DrawText("SELECTING", 0, 0, 12, BLACK);
-	break;
-      default:
-	break;
-      }
-      EndDrawing();
-      reset_buckets();
+  over_card = NULL;
+  memset(selection_rec_cards, 0, MAX_FRAMES);
+  selection_rec_cards_len = 0;
+  memset(selected_cards, 0, MAX_FRAMES);
+  selected_cards_len = 0;
+  memset(unselected_cards, 0, MAX_FRAMES);
+  unselected_cards_len = 0;
+  for (int i = 0; i < MAX_FRAMES; i++) {
+    Frame *f = &frames[i];
+    if (CheckCollisionRecs(f->rec, (Rectangle) {
+      .x = GetMouseX(),
+      .y = GetMouseY(),
+      .width = 1,
+      .height = 1,
+    })) {
+      if (!over_card) over_card = f;
     }
-  CloseWindow();
+    if (CheckCollisionRecs(f->rec, selection_rec)) {
+      selection_rec_cards[selection_rec_cards_len] = f;
+      selection_rec_cards_len += 1;
+    } else {
+      unselected_cards[unselected_cards_len] = f;
+      unselected_cards_len += 1;
+    }
+
+    if (f->selected) {
+      selected_cards[selected_cards_len] = f;
+      selected_cards_len += 1;
+    }
+  }
+
+  if (over_card) over_card->hot = 1;
+  for (int i = 0; i < unselected_cards_len; i++) {
+    unselected_cards[i]->selected = 0;
+  }
+  for (int i = 0; i < selection_rec_cards_len; i++) {
+    selection_rec_cards[i]->selected = 1;
+  }
+  for (int i = 0; i < selected_cards_len; i++) {
+    selected_cards[i]->selected = 1;
+  }
+
+  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (over_card) {
+      selection_offset = GetMousePosition();
+    } else {
+      for (int i = 0; i < selected_cards_len; i++) {
+        selected_cards[i]->selected = 0;
+      }
+      hold_origin = GetMousePosition();
+    }
+  } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+    char const *patterns[1] = {"*.png"};
+    char *response = tinyfd_openFileDialog("Open File",
+					     NULL,
+					     1,
+					     patterns,
+					     "image files",
+					     0);
+    if (response) {
+      Vector2 world_coords = GetScreenToWorld2D(GetMousePosition(), cam);
+      Texture tex = LoadTexture(response);
+      Frame *f = &frames[used_frames];
+      f->rec = (Rectangle) {.x = world_coords.x, .y = world_coords.y, .width = tex.width, .height = tex.height};
+      f->tex = tex;
+      used_frames += 1;
+    }
+  }
+
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    if (over_card) over_card->hot = 0;
+    if (over_card && hold_origin.x == 0) {
+      over_card->rec.x += GetMouseX() - selection_offset.x;
+      over_card->rec.y += GetMouseY() - selection_offset.y;
+      for (int i = 0; i < selected_cards_len; i++) {
+        Frame *f = selected_cards[i];
+        if (f == over_card) continue;
+        f->rec.x += GetMouseX() - selection_offset.x;
+        f->rec.y += GetMouseY() - selection_offset.y;
+      }
+      selection_offset = GetMousePosition();
+    } else {
+      hold_diff = Vector2Add(hold_diff, Vector2Subtract(GetMousePosition(), previous_mouse_position));
+      selection_rec.x = hold_origin.x;
+      selection_rec.y = hold_origin.y;
+      selection_rec.width = hold_diff.x;
+      selection_rec.height = hold_diff.y;
+      if (hold_diff.x < 0) {
+        selection_rec.x = hold_origin.x + hold_diff.x;
+        selection_rec.width *= -1;
+      }
+      if (hold_diff.y < 0) {
+        selection_rec.y = hold_origin.y + hold_diff.y;
+        selection_rec.height *= -1;
+      }
+      for (int i = 0; i < unselected_cards_len; i++) {
+        unselected_cards[i]->selected = 0;
+      }
+    }
+  }
+
+  if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    hold_diff.x = 0;
+    hold_diff.y = 0;
+    hold_origin.x = 0;
+    hold_origin.y = 0;
+    selection_rec.x = -10000;
+    selection_rec.y = -10000;
+    selection_rec.width = 0;
+    selection_rec.height = 0;
+  }
+  previous_mouse_position = GetMousePosition();
+
+  BeginDrawing();
+  Rectangle src = (Rectangle){-100000, -100000, 200000, 200000};
+  Rectangle dest = src;
+  DrawTexturePro(grid_texture, src, dest, (Vector2){0}, 0, WHITE);
+  for (int i = 0; i < MAX_FRAMES; i++) {
+    Frame f = frames[i];
+    Color c = WHITE;
+    if (f.selected) c = YELLOW;
+    if (f.hot) c = BLACK;
+    DrawTextureRec(f.tex, (Rectangle) {0, 0, f.rec.width, f.rec.height}, (Vector2) {f.rec.x, f.rec.y}, c);
+  }
+
+  DrawRectangleLinesEx((Rectangle){
+	  selection_rec.x,
+	  selection_rec.y,
+	  selection_rec.width,
+	  selection_rec.height
+	}, 1.0, BLUE);
+  DrawRectangleRec((Rectangle){
+	  selection_rec.x,
+	  selection_rec.y,
+	  selection_rec.width,
+	  selection_rec.height
+	}, (Color) {0, 0, 255, 127});
+
+  EndDrawing();
+  if (over_card) over_card->hot = 0;
+}
 }
