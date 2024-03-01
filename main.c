@@ -59,8 +59,9 @@ int main(void)
   Camera2D cam = {0};
 
   Frame *over_card = NULL;
-  Frame **selection_rec_cards = calloc(MAX_FRAMES, sizeof(Frame*));
-  int selection_rec_cards_len = 0;
+
+  int selection_rect_active = 0;
+
   Frame **selected_cards = calloc(MAX_FRAMES, sizeof(Frame*));
   int selected_cards_len = 0;
   Frame **unselected_cards = calloc(MAX_FRAMES, sizeof(Frame*));
@@ -70,8 +71,6 @@ int main(void)
   while (!WindowShouldClose()) {
 
   over_card = NULL;
-  memset(selection_rec_cards, 0, MAX_FRAMES);
-  selection_rec_cards_len = 0;
   memset(selected_cards, 0, MAX_FRAMES);
   selected_cards_len = 0;
   memset(unselected_cards, 0, MAX_FRAMES);
@@ -86,29 +85,29 @@ int main(void)
     })) {
       if (!over_card) over_card = f;
     }
-    if (CheckCollisionRecs(f->rec, selection_rec)) {
-      selection_rec_cards[selection_rec_cards_len] = f;
-      selection_rec_cards_len += 1;
-    } else {
-      unselected_cards[unselected_cards_len] = f;
-      unselected_cards_len += 1;
-    }
 
-    if (f->selected) {
-      selected_cards[selected_cards_len] = f;
-      selected_cards_len += 1;
+    if (selection_rect_active) {
+      if (CheckCollisionRecs(f->rec, selection_rec)) {
+	selected_cards[selected_cards_len] = f;
+	selected_cards_len += 1;
+      } else {
+	unselected_cards[unselected_cards_len] = f;
+	unselected_cards_len += 1;
+      }
+    } else {
+      if (f->selected) {
+	selected_cards[selected_cards_len] = f;
+	selected_cards_len += 1;
+      }
     }
   }
 
   if (over_card) over_card->hot = 1;
-  for (int i = 0; i < unselected_cards_len; i++) {
-    unselected_cards[i]->selected = 0;
-  }
-  for (int i = 0; i < selection_rec_cards_len; i++) {
-    selection_rec_cards[i]->selected = 1;
-  }
   for (int i = 0; i < selected_cards_len; i++) {
     selected_cards[i]->selected = 1;
+  }
+  for (int i = 0; i < unselected_cards_len; i++) {
+    unselected_cards[i]->selected = 0;
   }
 
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -119,6 +118,7 @@ int main(void)
         selected_cards[i]->selected = 0;
       }
       hold_origin = GetMousePosition();
+      selection_rect_active = 1;
     }
   } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
     char const *patterns[1] = {"*.png"};
@@ -139,17 +139,24 @@ int main(void)
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-    if (over_card) over_card->hot = 0;
-    if (over_card && hold_origin.x == 0) {
-      over_card->rec.x += GetMouseX() - selection_offset.x;
-      over_card->rec.y += GetMouseY() - selection_offset.y;
-      for (int i = 0; i < selected_cards_len; i++) {
-        Frame *f = selected_cards[i];
-        if (f == over_card) continue;
-        f->rec.x += GetMouseX() - selection_offset.x;
-        f->rec.y += GetMouseY() - selection_offset.y;
+    if (over_card && !selection_rect_active)  {
+      over_card->hot = 0;
+      if (hold_origin.x == 0) {
+        over_card->rec.x += GetMouseX() - selection_offset.x;
+        over_card->rec.y += GetMouseY() - selection_offset.y;
+	if (!over_card->selected) {
+	  for (int i = 0; i < selected_cards_len; i++) {
+	    selected_cards[i]->selected = 0;
+	  }
+	};
+        for (int i = 0; i < selected_cards_len; i++) {
+          Frame *f = selected_cards[i];
+          if (f == over_card) continue;
+          f->rec.x += GetMouseX() - selection_offset.x;
+          f->rec.y += GetMouseY() - selection_offset.y;
+        }
+        selection_offset = GetMousePosition();
       }
-      selection_offset = GetMousePosition();
     } else {
       hold_diff = Vector2Add(hold_diff, Vector2Subtract(GetMousePosition(), previous_mouse_position));
       selection_rec.x = hold_origin.x;
@@ -164,9 +171,6 @@ int main(void)
         selection_rec.y = hold_origin.y + hold_diff.y;
         selection_rec.height *= -1;
       }
-      for (int i = 0; i < unselected_cards_len; i++) {
-        unselected_cards[i]->selected = 0;
-      }
     }
   }
 
@@ -179,6 +183,7 @@ int main(void)
     selection_rec.y = -10000;
     selection_rec.width = 0;
     selection_rec.height = 0;
+    selection_rect_active = 0;
   }
   previous_mouse_position = GetMousePosition();
 
