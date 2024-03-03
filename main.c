@@ -59,8 +59,10 @@ int main(void)
   Camera2D cam = {0};
 
   Frame *over_card = NULL;
+  int over_card_index = -1;
 
   int selection_rect_active = 0;
+  int update_depth = 0;
 
   Frame **selected_cards = calloc(MAX_FRAMES, sizeof(Frame*));
   int selected_cards_len = 0;
@@ -71,6 +73,7 @@ int main(void)
   while (!WindowShouldClose()) {
 
   over_card = NULL;
+  over_card_index = -1;
   memset(selected_cards, 0, MAX_FRAMES);
   selected_cards_len = 0;
   memset(unselected_cards, 0, MAX_FRAMES);
@@ -83,7 +86,8 @@ int main(void)
       .width = 1,
       .height = 1,
     })) {
-      if (!over_card) over_card = f;
+      over_card = f;
+      over_card_index = i;
     }
 
     if (selection_rect_active) {
@@ -113,6 +117,7 @@ int main(void)
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     if (over_card) {
       selection_offset = GetMousePosition();
+      update_depth = 1;
     } else {
       for (int i = 0; i < selected_cards_len; i++) {
         selected_cards[i]->selected = 0;
@@ -185,9 +190,35 @@ int main(void)
     selection_rec.height = 0;
     selection_rect_active = 0;
   }
+
+  if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
+    hold_diff = Vector2Add(hold_diff, Vector2Subtract(GetMousePosition(), previous_mouse_position));
+    cam.offset = Vector2Add(cam.offset, hold_diff);
+    hold_diff.x = 0;
+    hold_diff.y = 0;
+  }
+  if (IsMouseButtonReleased(MOUSE_MIDDLE_BUTTON)) {
+    hold_diff.x = 0;
+    hold_diff.y = 0;
+  }
   previous_mouse_position = GetMousePosition();
 
+  if (update_depth) {
+    update_depth = 0;
+    if (over_card_index != used_frames - 1) {
+      int current_index = over_card_index;
+      while (current_index != used_frames - 1) {
+	Frame current_frame = frames[current_index];
+	Frame next_frame = frames[current_index + 1];
+	frames[current_index] = next_frame;
+	frames[current_index + 1] = current_frame;
+	current_index += 1;
+      }
+    }
+  }
+
   BeginDrawing();
+  BeginMode2D(cam);
   Rectangle src = (Rectangle){-100000, -100000, 200000, 200000};
   Rectangle dest = src;
   DrawTexturePro(grid_texture, src, dest, (Vector2){0}, 0, WHITE);
@@ -212,6 +243,7 @@ int main(void)
 	  selection_rec.height
 	}, (Color) {0, 0, 255, 127});
 
+  EndMode2D();
   EndDrawing();
   if (over_card) over_card->hot = 0;
 }
